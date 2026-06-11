@@ -3,11 +3,14 @@
 Backend REST API built using FastAPI.
 
 ## Features
-
 - Create Ticket
 - View Tickets
 
 ## Tech Stack
-
 - Python
 - FastAPI
+- Git
+
+## Run
+
+uvicorn app.main:app --reload
