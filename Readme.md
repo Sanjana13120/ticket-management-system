@@ -19,23 +19,23 @@ Backend ticket management system built using FastAPI, PostgreSQL and SQLAlchemy.
 - Uvicorn
 
 ## API Endpoints
-# Create Ticket
+### Create Ticket
 
 POST /tickets
 
-# Get All Tickets
+### Get All Tickets
 
 GET /tickets
 
-# Get Ticket By ID
+### Get Ticket By ID
 
 GET /tickets/{id}
 
-# Update Ticket
+### Update Ticket
 
 PUT /tickets/{id}
 
-# Delete Ticket
+### Delete Ticket
 
 DELETE /tickets/{id}
 
