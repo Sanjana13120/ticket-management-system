@@ -1,4 +1,9 @@
 from fastapi import FastAPI
+from app.database import engine, base
+from app.models import Ticket
+
+base.metadata.create_all(bind=engine)
+
 
 app=FastAPI()
 
