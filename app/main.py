@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from app.database import engine, base, get_db
 from app.models import Ticket
 
@@ -29,7 +29,7 @@ def get_tickets(db: Session = Depends(get_db)):
 def get_ticket(ticket_id: int, db: Session = Depends(get_db)):
     ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
     if ticket is None:
-        return {"error": "Ticket not found"}
+        raise HTTPException(status_code=404, detail="Ticketnot found")
     return ticket
 
 
@@ -40,7 +40,7 @@ def get_ticket(ticket_id: int, db: Session = Depends(get_db)):
 #     tickets.append(ticket)
 #     return tickets
 def create_ticket(ticket: TicketCreate, db: Session = Depends(get_db)):
-    new_ticket = Ticket(title=ticket.title, description=ticket.description)
+    new_ticket = Ticket(title=ticket.title, description=ticket.description, status=ticket.status)
     db.add(new_ticket)
     db.commit()
     db.refresh(new_ticket)
@@ -51,7 +51,7 @@ def create_ticket(ticket: TicketCreate, db: Session = Depends(get_db)):
 def update_ticket(ticket_id: int, updated_ticket: TicketUpdate, db:Session= Depends(get_db)):
     ticket=db.query(Ticket).filter(Ticket.id == ticket_id).first()
     if ticket is None:
-        return {"error": "Ticket not found"}
+        raise HTTPException(status_code=404, detail="Ticket not found")
     
     ticket.title=updated_ticket.title
     ticket.description=updated_ticket.description
@@ -66,7 +66,7 @@ def delete_ticket(ticket_id:int, db: Session=Depends(get_db)):
     ticket=db.query(Ticket).filter(Ticket.id==ticket_id).first()
 
     if ticket is None:
-        return {"error": "Ticket not found"}
+        raise HTTPException(status_code=404, detail="Ticket not found")
     db.delete(ticket)
     db.commit()
 
