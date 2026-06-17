@@ -7,7 +7,13 @@ class TicketCreate(BaseModel):
     description: str
     status: TicketStatus = TicketStatus.OPEN
     priority: TicketPriority = TicketPriority.MEDIUM
+    assigned_user_id: int | None = None  # Optional field for assigned user ID
 
 class TicketUpdate(BaseModel):
     title: str
     description: str
+
+
+class UserCreate(BaseModel):
+    name: str
+    email: str
