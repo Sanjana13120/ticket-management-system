@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from app.database import engine, base, get_db
 from app.models import Ticket, User
+from app.enums import TicketStatus, TicketPriority
 
 from fastapi import Depends
 from sqlalchemy.orm import Session
@@ -22,6 +23,17 @@ def home():
 def get_tickets(db: Session = Depends(get_db)):
     tickets = db.query(Ticket).all()
     return tickets
+
+@app.get("/tickets/unassigned")
+def get_unassigned_tickets(db:Session=Depends(get_db)):
+    tickets=db.query(Ticket).filter(Ticket.assigned_user_id.is_(None)).all()
+    return tickets
+
+@app.get("/tickets/status/{status}")
+def get_tickets_by_status(status:TicketStatus, db:Session=Depends(get_db)):
+    tickets=db.query(Ticket).filter(Ticket.status==status).all()
+    return tickets
+
 
 @app.get("/tickets/{ticket_id}")
 def get_ticket(ticket_id: int, db: Session = Depends(get_db)):
@@ -64,6 +76,7 @@ def delete_ticket(ticket_id:int, db: Session=Depends(get_db)):
     db.commit()
 
     return {"message": "Ticket deleted successfully"}
+
 
 
 @app.post("/users")
@@ -109,3 +122,4 @@ def assign_ticket(ticket_id:int, user_id:int, db:Session=Depends(get_db)):
     db.commit()
     db.refresh(ticket)
     return ticket
+
