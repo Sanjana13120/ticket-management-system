@@ -1,3 +1,5 @@
+from unittest import skip
+
 from fastapi import FastAPI, HTTPException
 from app.database import engine, base, get_db
 from app.models import Ticket, User
@@ -5,8 +7,9 @@ from app.enums import TicketStatus, TicketPriority
 
 from fastapi import Depends
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 
-from app.schemas import TicketCreate, TicketUpdate, UserCreate
+from app.schemas import TicketCreate, TicketResponse, TicketUpdate, UserCreate, UserResponse
 
 base.metadata.create_all(bind=engine)
 
@@ -19,9 +22,14 @@ tickets=[]
 def home():
     return {"message":"Welcome to the Ticket Management System!"}
 
-@app.get("/tickets")
-def get_tickets(db: Session = Depends(get_db)):
-    tickets = db.query(Ticket).all()
+@app.get("/tickets",response_model=list[TicketResponse])
+def get_tickets(skip: int=0, limit: int=10, db: Session = Depends(get_db)):
+    tickets = db.query(Ticket).offset(skip).limit(limit).all()
+    return tickets
+
+@app.get("/tickets/search", response_model=list[TicketResponse])
+def search_tickets(title:str, db:Session=Depends(get_db)):
+    tickets=db.query(Ticket).filter(Ticket.title.ilike(f"%{title}%")).all()
     return tickets
 
 @app.get("/tickets/unassigned")
@@ -35,7 +43,7 @@ def get_tickets_by_status(status:TicketStatus, db:Session=Depends(get_db)):
     return tickets
 
 
-@app.get("/tickets/{ticket_id}")
+@app.get("/tickets/{ticket_id}",response_model=TicketResponse)
 def get_ticket(ticket_id: int, db: Session = Depends(get_db)):
     ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
     if ticket is None:
@@ -83,8 +91,13 @@ def delete_ticket(ticket_id:int, db: Session=Depends(get_db)):
 def create_user(user: UserCreate, db: Session=Depends(get_db)):
     new_user = User(name=user.name, email=user.email)
     db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+    try:
+        db.commit()
+        db.refresh(new_user)
+#"Exception catches every possible error, including programming mistakes. It's better to catch IntegrityError because we know we're specifically handling a database constraint violation."
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Email already exists")
 
     return new_user
     
@@ -94,20 +107,20 @@ def get_users(db: Session=Depends(get_db)):
     users=db.query(User).all()
     return users
 
-@app.get("/users/{user_id}")
+@app.get("/users/{user_id}",response_model=UserResponse)
 def get_user(user_id:int, db:Session=Depends(get_db)):
     user=db.query(User).filter(User.id==user_id).first()
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
-@app.get("/users/{user_id}/tickets")
+@app.get("/users/{user_id}/tickets",response_model=list[TicketResponse])
 def get_user_tickets(user_id:int, db:Session=Depends(get_db)):
-    tickets=db.query(Ticket).filter(Ticket.assigned_user_id==user_id).all()
+    #tickets=db.query(Ticket).filter(Ticket.assigned_user_id==user_id).all()
     user=db.query(User).filter(User.id==user_id).first()
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
-    return tickets
+    return user.tickets
 
 @app.put("/tickets/{ticket_id}/assign/{user_id}")
 def assign_ticket(ticket_id:int, user_id:int, db:Session=Depends(get_db)):
